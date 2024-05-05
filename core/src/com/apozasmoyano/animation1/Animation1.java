@@ -1,93 +1,92 @@
 package com.apozasmoyano.animation1;
 
-import com.badlogic.gdx.ApplicationAdapter;
+
 import com.badlogic.gdx.ApplicationListener;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.GL20;
+import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
-import com.badlogic.gdx.utils.ScreenUtils;
+import com.badlogic.gdx.math.Rectangle;
+import com.badlogic.gdx.math.Vector3;
 
 public class Animation1 implements ApplicationListener {
-	// Constant rows and columns of the sprite sheet
+
+	private static final int FRAME_COLSW = 8, FRAME_COLSI = 13, FRAME_ROWS = 1;
 
 
-	// Objects used
-	// Must declare frame type (TextureRegion)
-	Texture walkSheet;
-	Texture background;
-	SpriteBatch spriteBatch;
-	Animation<TextureRegion> walk;
+	Animation<TextureRegion> walkAnimation, idleAnimation; // Must declare frame type (TextureRegion)
+	Texture walkSheet, idleSheet, background;
 	TextureRegion bgRegion;
-	int posx;
-	int posy;
-	// A variable for tracking elapsed time for the animation
+	SpriteBatch spriteBatch;
+	private OrthographicCamera camera;
+
+
 	float stateTime;
+	boolean isWalking = false;
+	int dir = 1, dirv = 1;
+	float posx, posy;
+	Rectangle up, down, left, right;
+	final int IDLE=0, UP=1, DOWN=2, LEFT=3, RIGHT=4;
 
 	@Override
 	public void create() {
+
+		camera = new OrthographicCamera();
+		camera.setToOrtho(false, 800, 480);
+		spriteBatch = new SpriteBatch();
+
+		//Background
 		background = new Texture(Gdx.files.internal("background.jpg"));
 		background.setWrap(Texture.TextureWrap.MirroredRepeat, Texture.TextureWrap.MirroredRepeat);
-		 bgRegion = new TextureRegion(background);
+		bgRegion = new TextureRegion(background);
 		posx = 0;
 		posy = 0;
 
-		// Load the sprite sheet as a Texture
-		walkSheet = new Texture(Gdx.files.internal("walk.jpg"));
+		// facilities per calcular el "touch"
+		up = new Rectangle(0, camera.viewportHeight*2/3, camera.viewportWidth, camera.viewportHeight/3);
+		down = new Rectangle(0, 0, camera.viewportWidth, camera.viewportHeight/3);
+		left = new Rectangle(0, 0, camera.viewportWidth/3, camera.viewportHeight);
+		right = new Rectangle(camera.viewportWidth*2/3, 0, camera.viewportWidth/3, camera.viewportHeight);
 
-		// Use the split utility method to create a 2D array of TextureRegions. This is
-		// possible because this sprite sheet contains frames of equal size and they are
-		// all aligned.
+		//Idle
+		idleSheet = new Texture(Gdx.files.internal("idle.png"));
 
+		TextureRegion[][] tmpI = TextureRegion.split(idleSheet,
+				idleSheet.getWidth()  / FRAME_COLSI,
+				idleSheet.getHeight() / FRAME_ROWS);
+		TextureRegion[] idleFrames = new TextureRegion[FRAME_COLSI * FRAME_ROWS];
 
+		int indexI = 0;
+		for (int i = 0; i < FRAME_ROWS; i++) {
+			for (int j = 0; j < FRAME_COLSI; j++) {
+				idleFrames[indexI++] = tmpI[i][j];
+			}
+		}
 
-		// Place the regions into a 1D array in the correct order, starting from the top
-		// left, going across first. The Animation constructor requires a 1D array.
-		TextureRegion[] walkFrames = new TextureRegion[27];
+		idleAnimation = new Animation<TextureRegion>(0.12f, idleFrames);
 
-		walkFrames[0] = new TextureRegion(walkSheet,42,215,79,140);
-		walkFrames[1] = new TextureRegion(walkSheet,152,215,79,140);
-		walkFrames[2] = new TextureRegion(walkSheet,256,215,79,140);
-		walkFrames[3] = new TextureRegion(walkSheet,354,215,79,140);
-		walkFrames[4] = new TextureRegion(walkSheet,459,215,79,140);
-		walkFrames[5] = new TextureRegion(walkSheet,565,215,79,140);
-		walkFrames[6] = new TextureRegion(walkSheet,661,215,79,140);
-		walkFrames[7] = new TextureRegion(walkSheet,772,215,79,140);
-		walkFrames[8] = new TextureRegion(walkSheet,881,215,79,140);
+		// Walk
+		walkSheet = new Texture(Gdx.files.internal("walk.png"));
 
-		walkFrames[9] = new TextureRegion(walkSheet,42,395,79,140);
-		walkFrames[10] = new TextureRegion(walkSheet,152,395,79,140);
-		walkFrames[11] = new TextureRegion(walkSheet,256,395,79,140);
-		walkFrames[12] = new TextureRegion(walkSheet,354,395,79,140);
-		walkFrames[13] = new TextureRegion(walkSheet,459,395,79,140);
-		walkFrames[14] = new TextureRegion(walkSheet,565,395,79,140);
-		walkFrames[15] = new TextureRegion(walkSheet,661,395,79,140);
-		walkFrames[16] = new TextureRegion(walkSheet,772,395,79,140);
-		walkFrames[17] = new TextureRegion(walkSheet,881,395,79,140);
+		TextureRegion[][] tmp = TextureRegion.split(walkSheet,
+				walkSheet.getWidth() / FRAME_COLSW,
+				walkSheet.getHeight() / FRAME_ROWS);
 
-		walkFrames[18] = new TextureRegion(walkSheet,42,570,79,140);
-		walkFrames[19] = new TextureRegion(walkSheet,152,570,79,140);
-		walkFrames[20] = new TextureRegion(walkSheet,256,570,79,140);
-		walkFrames[21] = new TextureRegion(walkSheet,354,570,79,140);
-		walkFrames[22] = new TextureRegion(walkSheet,459,570,79,140);
-		walkFrames[23] = new TextureRegion(walkSheet,565,570,79,140);
-		walkFrames[24] = new TextureRegion(walkSheet,661,570,79,140);
-		walkFrames[25] = new TextureRegion(walkSheet,772,566,79,140);
-		walkFrames[26] = new TextureRegion(walkSheet,881,566,79,140);
+		TextureRegion[] walkFrames = new TextureRegion[FRAME_COLSW * FRAME_ROWS];
+		int index = 0;
+		for (int i = 0; i < FRAME_ROWS; i++) {
+			for (int j = 0; j < FRAME_COLSW; j++) {
+				walkFrames[index++] = tmp[i][j];
+			}
+		}
+
+		walkAnimation = new Animation<TextureRegion>(0.12f, walkFrames);
 
 
 
-
-
-
-
-		// Initialize the Animation with the frame interval and array of frames
-		walk = new Animation<TextureRegion>(0.025f, walkFrames);
-
-		// Instantiate a SpriteBatch for drawing and reset the elapsed animation
-		// time to 0
 		spriteBatch = new SpriteBatch();
 		stateTime = 0f;
 	}
@@ -99,18 +98,54 @@ public class Animation1 implements ApplicationListener {
 
 	@Override
 	public void render() {
-
+		camera.update();
+		spriteBatch.setProjectionMatrix(camera.combined);
 		Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT); // Clear screen
 		stateTime += Gdx.graphics.getDeltaTime(); // Accumulate elapsed animation time
 
-		// Get current frame of animation for the current stateTime
-		TextureRegion currentFrame = walk.getKeyFrame(stateTime, true);
+
+		//Background
+		bgRegion.setRegion(posx,posy,camera.viewportWidth,camera.viewportHeight+posy);
+
+		//Animations
+		TextureRegion currentFrame = walkAnimation.getKeyFrame(stateTime, true);
+		TextureRegion currentFrameIdle = idleAnimation.getKeyFrame(stateTime, true);
+
+		int sprW = 25;
+		int sprH = 50;
 		spriteBatch.begin();
-		spriteBatch.draw(currentFrame, 550, 100,0,0,currentFrame.getRegionWidth(),currentFrame.getRegionHeight(),4,4,0); // Draw current frame at (50, 50)
+		spriteBatch.draw(bgRegion,0,0);
+
+		background.setWrap(Texture.TextureWrap.MirroredRepeat, Texture.TextureWrap.MirroredRepeat);
+		int touch = virtual_joystick_control();
+
+		//Moviment
+		if (touch != IDLE) {
+			isWalking = true;
+			if (touch == UP) {
+				dirv = 1;
+				posy -= 0.001;
+			} else if(touch == LEFT){
+				dir = -1;
+				posx -= 0.001;
+			} else if (touch == RIGHT) {
+				dir = 1;
+				posx += 0.001;
+			} else if (touch == DOWN) {
+				dirv = -1;
+				posy += 0.001;
+			}
+
+		} else {
+			isWalking = false;
+		}
+
+		if (isWalking) {
+			spriteBatch.draw(currentFrame, camera.viewportWidth / 2 - 25*dir, camera.viewportHeight / 2 - 44, (sprW + 50)*dir, sprH + 50); // Draw current frame at (50, 50)
+		} else {
+			spriteBatch.draw(currentFrameIdle, camera.viewportWidth / 2 - 25*dir, camera.viewportHeight / 2 - 44, (sprW + 50)*dir, sprH + 50); // Draw current frame at (50, 50)
+		}
 		spriteBatch.end();
-		background.setWrap( Texture.TextureWrap.MirroredRepeat, Texture.TextureWrap.MirroredRepeat);
-
-
 	}
 
 	@Override
@@ -124,8 +159,30 @@ public class Animation1 implements ApplicationListener {
 	}
 
 	@Override
-	public void dispose() { // SpriteBatches and Textures must always be disposed
+	public void dispose() {
 		spriteBatch.dispose();
 		walkSheet.dispose();
+		idleSheet.dispose();
+	}
+
+	protected int virtual_joystick_control() {
+
+		for(int i=0;i<10;i++)
+			if (Gdx.input.isTouched(i)) {
+				Vector3 touchPos = new Vector3();
+				touchPos.set(Gdx.input.getX(i), Gdx.input.getY(i), 0);
+
+				camera.unproject(touchPos);
+				if (up.contains(touchPos.x, touchPos.y)) {
+					return UP;
+				} else if (down.contains(touchPos.x, touchPos.y)) {
+					return DOWN;
+				} else if (left.contains(touchPos.x, touchPos.y)) {
+					return LEFT;
+				} else if (right.contains(touchPos.x, touchPos.y)) {
+					return RIGHT;
+				}
+			}
+		return IDLE;
 	}
 }
